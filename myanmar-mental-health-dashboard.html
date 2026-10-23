@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Narrative Power | Myanmar Mental Health Research</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        :root {
+            --navy: #1a2a44;
+            --navy-dark: #0f1a2e;
+            --gold: #c9a227;
+            --gold-dark: #a8841a;
+            --gold-light: #e8d48b;
+            --bg: #f0f2f5;
+            --card: #ffffff;
+            --text: #1a2a44;
+            --muted: #6b7280;
+            --border: #e2e6ed;
+            --radius: 14px;
+            --shadow: 0 4px 20px rgba(26, 42, 68, 0.06);
+            --chart-bg: #e8eaed;
+        }
+
+        [data-bs-theme="dark"] {
+            --navy: #e8d48b;
+            --navy-dark: #0d1526;
+            --gold: #d4af37;
+            --gold-dark: #c9a227;
+            --gold-light: #f0e6b8;
+            --bg: #0d1117;
+            --card: #161b22;
+            --text: #e6edf3;
+            --muted: #8b949e;
+            --border: #30363d;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            --chart-bg: #2a2f38;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            line-height: 1.5;
+            transition: background 0.25s, color 0.25s;
+        }
+
+        .topbar {
+            background: var(--navy-dark);
+            border-bottom: 3px solid var(--gold);
+            padding: 0.85rem 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            color: #fff;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.25rem;
+        }
+        .brand span { color: var(--gold); }
+        .brand small {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 400;
+            color: #9ca3af;
+            letter-spacing: 0.5px;
+            margin-top: -2px;
+        }
+        .theme-btn {
+            background: transparent;
+            border: 1px solid rgba(201, 162, 39, 0.4);
+            color: var(--gold);
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+        .theme-btn:hover { background: rgba(201, 162, 39, 0.15); }
+
+        .hero {
+            text-align: center;
+            padding: 2.5rem 1.5rem 2rem;
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+        }
+        .hero h1 {
+            font-size: clamp(1.4rem, 3vw, 1.9rem);
+            font-weight: 800;
+            color: var(--navy-dark);
+            margin: 0 0 0.6rem;
+        }
+        [data-bs-theme="dark"] .hero h1 { color: var(--gold); }
+        .hero p {
+            max-width: 720px;
+            margin: 0 auto 1.2rem;
+            color: var(--muted);
+            font-size: 1rem;
+        }
+        .stat-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            justify-content: center;
+        }
+        .stat-pill {
+            background: var(--navy-dark);
+            color: #fff;
+            padding: 0.4rem 1rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .stat-pill.gold { background: var(--gold-dark); color: #fff; }
+        .stat-pill.outline {
+            background: transparent;
+            border: 1.5px solid var(--navy-dark);
+            color: var(--navy-dark);
+        }
+        [data-bs-theme="dark"] .stat-pill.outline {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        .wrap {
+            max-width: 1480px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        .card-box {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 1.25rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .card-box .title {
+            font-size: 0.95rem;
+            font-weight: 650;
+            color: var(--text);
+            margin: 0 0 1rem;
+            padding-left: 0.7rem;
+            border-left: 3.5px solid var(--gold);
+            line-height: 1.3;
+        }
+        .card-box .caption {
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-top: 0.75rem;
+            font-style: italic;
+        }
+        .chart-box {
+            position: relative;
+            width: 100%;
+            flex: 1 1 auto;
+            min-height: 220px;
+            background: var(--chart-bg);
+            border-radius: 10px;
+            padding: 12px 8px 8px;
+        }
+        .chart-box.tall { min-height: 280px; }
+        .chart-box.short { min-height: 180px; }
+
+        .map-card { padding: 0.75rem; }
+        #map {
+            height: 520px;
+            width: 100%;
+            border-radius: 10px;
+            background: #1a1a2e;
+            border: 1px solid var(--border);
+        }
+        [data-bs-theme="dark"] #map { background: #1c2333; }
+        .map-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.6rem;
+            padding: 0 0.25rem;
+        }
+        .map-toolbar .btn-reset {
+            background: var(--navy-dark);
+            color: #fff;
+            border: none;
+            padding: 0.35rem 0.85rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .map-toolbar .btn-reset:hover { background: var(--navy); }
+        .map-toolbar .hint { font-size: 0.78rem; color: var(--muted); margin-left: auto; }
+        .map-legend {
+            margin-top: 0.75rem;
+            padding: 0 0.25rem 0.25rem;
+        }
+        .map-legend p {
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin: 0 0 0.4rem;
+        }
+        .legend-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+        .legend-swatch {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
+        .section-head {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--gold-dark);
+            margin: 1.75rem 0 0.9rem;
+            padding-bottom: 0.4rem;
+            border-bottom: 2px solid var(--gold);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        [data-bs-theme="dark"] .section-head { color: var(--gold); }
+
+        @media (min-width: 992px) {
+            .map-col { position: sticky; top: 72px; align-self: flex-start; }
+        }
+
+        .doc {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 2rem;
+            margin-top: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+        .doc h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--navy-dark);
+            margin: 0 0 1rem;
+            padding-bottom: 0.4rem;
+            border-bottom: 2px solid var(--gold);
+            display: inline-block;
+        }
+        [data-bs-theme="dark"] .doc h2 { color: var(--gold); }
+        .doc h3 { font-size: 1.05rem; margin: 1.25rem 0 0.6rem; font-weight: 650; }
+        .doc p, .doc li { color: var(--muted); line-height: 1.75; }
+        .doc ul { padding-left: 1.25rem; }
+
+        .btn-gold {
+            background: var(--gold-dark);
+            color: #fff;
+            border: none;
+            padding: 0.5rem 1.1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .btn-gold:hover { background: var(--gold); color: #fff; }
+
+        .leaflet-popup-content-wrapper {
+            border-radius: 10px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+        }
+        .leaflet-popup-content { margin: 10px 14px; }
+    </style>
+</head>
+<body>
+
+    <header class="topbar">
+        <a class="brand" href="#">
+            <div>
+                Narrative <span>Power</span>
+                <small>Myanmar Mental Health Research</small>
+            </div>
+        </a>
+        <button class="theme-btn" id="themeToggle" title="Toggle theme" type="button">
+            <i class="bi bi-moon-fill" id="themeIcon"></i>
+        </button>
+    </header>
+
+    <section class="hero" id="dashboard">
+        <h1>An Analysis of Mental Health Conditions in Myanmar</h1>
+        <p>Exploring the relationship between political instability, armed conflict, economic hardship, educational disruption, and mental health outcomes in Myanmar.</p>
+        <div class="stat-pills">
+            <span class="stat-pill"><i class="bi bi-people-fill me-1"></i> Sample: 814</span>
+            <span class="stat-pill gold"><i class="bi bi-clock-history me-1"></i> Nov 2025 – Jul 2026</span>
+            <span class="stat-pill outline"><i class="bi bi-geo-alt-fill me-1"></i> 14 States / Regions</span>
+        </div>
+    </section>
+
+    <div class="wrap">
+        <div class="row g-3">
+
+            <!-- MAP -->
+            <div class="col-lg-5 map-col">
+                <div class="card-box map-card">
+                    <div class="map-toolbar">
+                        <button class="btn-reset" type="button" onclick="resetMap()">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset View
+                        </button>
+                        <span class="hint">Click a region for details</span>
+                    </div>
+                    <div id="map"></div>
+                    <div class="map-legend">
+                        <p>Hopelessness Level (%)</p>
+                        <div class="legend-row">
+                            <div class="legend-item"><span class="legend-swatch" style="background:#7f0000"></span> 98–100%</div>
+                            <div class="legend-item"><span class="legend-swatch" style="background:#b30000"></span> 95–97%</div>
+                            <div class="legend-item"><span class="legend-swatch" style="background:#d7301f"></span> 92–94%</div>
+                            <div class="legend-item"><span class="legend-swatch" style="background:#ef6548"></span> 88–91%</div>
+                            <div class="legend-item"><span class="legend-swatch" style="background:#fc8d59"></span> &lt;88%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHARTS -->
+            <div class="col-lg-7">
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <div class="card-box">
+                            <div class="title">Age Distribution</div>
+                            <div class="chart-box"><canvas id="ageChart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card-box">
+                            <div class="title">Respondents by Region</div>
+                            <div class="chart-box"><canvas id="regionChart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card-box">
+                            <div class="title">Occupation Status</div>
+                            <div class="chart-box"><canvas id="occupationChart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card-box">
+                            <div class="title">Gender Breakdown</div>
+                            <div class="chart-box"><canvas id="genderChart"></canvas></div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="section-head"><i class="bi bi-exclamation-triangle-fill"></i> Impact of Major Stressors</div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="card-box">
+                            <div class="title">Average Impact Score of Stressors (1–5 Scale)</div>
+                            <div class="chart-box tall"><canvas id="averageImpactChart"></canvas></div>
+                            <div class="caption">Scale: 1 (No impact) → 5 (Extreme impact). Valid responses: 814.</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card-box">
+                            <div class="title">Coup Impact Distribution</div>
+                            <div class="chart-box short"><canvas id="coupChart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card-box">
+                            <div class="title">Armed Conflict Impact</div>
+                            <div class="chart-box short"><canvas id="conflictChart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card-box">
+                            <div class="title">Economic Hardship Impact</div>
+                            <div class="chart-box short"><canvas id="econChart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card-box">
+                            <div class="title">Conscription Law Impact</div>
+                            <div class="chart-box short"><canvas id="conscriptionChart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card-box">
+                            <div class="title">Natural Disaster Impact</div>
+                            <div class="chart-box short"><canvas id="disasterChart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card-box">
+                            <div class="title">Freedom of Expression Impact</div>
+                            <div class="chart-box short"><canvas id="freedomChart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="card-box">
+                            <div class="title">Barriers to Education Impact</div>
+                            <div class="chart-box short"><canvas id="educationChart"></canvas></div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="section-head"><i class="bi bi-activity"></i> Mental Health Symptoms</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card-box">
+                            <div class="title">Levels of Hopelessness</div>
+                            <div class="chart-box short"><canvas id="hopelessnessChart"></canvas></div>
+                            <div class="caption">100% of respondents report feeling hopeless at least “Greatly”.</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card-box">
+                            <div class="title">Depressive Symptoms Frequency</div>
+                            <div class="chart-box short"><canvas id="depressionChart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card-box">
+                            <div class="title">Sleep Difficulties Frequency</div>
+                            <div class="chart-box short"><canvas id="sleepChart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card-box">
+                            <div class="title">Fear and Panic Responses</div>
+                            <div class="chart-box short"><canvas id="fearChart"></canvas></div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="section-head"><i class="bi bi-heart-pulse-fill"></i> Support &amp; Demographics</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card-box">
+                            <div class="title">Access to Mental Health Support</div>
+                            <div class="chart-box"><canvas id="supportChart"></canvas></div>
+                            <div class="caption">85% report insufficient or no access to mental health support.</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card-box">
+                            <div class="title">Mental Health Impact by Gender</div>
+                            <div class="chart-box"><canvas id="genderImpactChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="doc" id="research-period">
+            <h2>Research Period</h2>
+            <p>The data for this study was collected over an 8-month period, from <strong>November 1, 2025, to July 1, 2026</strong>.</p>
+        </div>
+
+        <div class="doc" id="executive-summary">
+            <h2>Executive Summary</h2>
+            <p>This study examines the profound impact of political conflict, the military coup, economic hardship, educational disruption, natural disasters, and restrictions on freedom of expression on the mental health of people in Myanmar. Based on a survey of 814 respondents across 14 states and regions, the findings reveal a severe mental health crisis.</p>
+            <ul>
+                <li><strong>Universal Hopelessness:</strong> 100% of respondents report experiencing hopelessness either “Extremely” or “Greatly”.</li>
+                <li><strong>Primary Stressors:</strong> The military coup and armed conflict scored the highest average impact (4.4/5), followed closely by economic hardship (4.3/5) and educational barriers (4.1/5).</li>
+                <li><strong>Lack of Support:</strong> 85% of respondents stated that they have “Not sufficient at all” or only “Slightly sufficient” access to mental health support services.</li>
+                <li><strong>Gender Disparities:</strong> Male respondents generally reported slightly higher average impact scores across several stressors compared to female respondents.</li>
+            </ul>
+        </div>
+
+        <div class="doc" id="introduction">
+            <h2>Introduction</h2>
+            <p>Myanmar has faced compounded crises since the 2021 military coup, including widespread armed conflict, economic collapse, and the suppression of civil liberties. These systemic shocks disrupt daily life, destroy livelihoods, and dismantle educational and health infrastructures. The psychological toll of living under constant threat, uncertainty, and adversity is immense. This research aims to quantify the mental health burden on the population and identify the primary drivers of psychological distress.</p>
+        </div>
+
+        <div class="doc" id="objectives">
+            <h2>Research Objectives</h2>
+            <ul>
+                <li>To determine the distribution of reported mental health symptoms (depression, anxiety, hopelessness, sleep issues) among survey respondents.</li>
+                <li>To explore the statistical association between major socio-political stressors (coup, conflict, economic collapse) and reported mental health outcomes.</li>
+                <li>To compare mental health impacts across different demographic groups (gender, age, occupation) and geographic regions.</li>
+                <li>To assess the perceived availability and accessibility of mental health support services in Myanmar.</li>
+            </ul>
+        </div>
+
+        <div class="doc" id="literature-review">
+            <h2>Literature Review</h2>
+            <p>According to the World Health Organization (WHO, 2022), mental health is not merely the absence of disease but a state of well-being where an individual can cope with normal stresses and contribute to their community. In conflict-affected settings, the Inter-Agency Standing Committee (IASC, 2007) highlights that populations face elevated risks of depression, anxiety, trauma, and sleep disorders. Economic instability and a lack of educational continuity further compound these vulnerabilities, particularly among youth and working-age adults (OCHA, n.d.).</p>
+        </div>
+
+        <div class="doc" id="methodology">
+            <h2>Research Methodology</h2>
+            <p><strong>Design &amp; Population:</strong> A cross-sectional survey design was used, targeting residents within Myanmar. The sample included 814 respondents.</p>
+            <p><strong>Sampling &amp; Data Collection:</strong> Data was collected via a mixed-methods approach, utilizing both online and offline (face-to-face) surveys. Random sampling was attempted, though logistical and security constraints in conflict zones limited strict randomization.</p>
+            <p><strong>Instrument:</strong> The survey captured demographics (age, gender, occupation, region) and measured the impact of various stressors on a 1–5 Likert scale. It also assessed the frequency of symptoms like hopelessness, depression, sleep issues, and panic attacks.</p>
+            <p><strong>Ethics:</strong> All respondent data was anonymized. No personally identifiable information was collected or exposed.</p>
+        </div>
+
+        <div class="doc" id="findings">
+            <h2>Research Findings</h2>
+            <p>The interactive dashboard above visualizes the core findings. Key takeaways include:</p>
+            <ul>
+                <li>The top three demographic groups were 26–35 year olds (53%), Private Employees (42%), and residents of Yangon (16%).</li>
+                <li><strong>Stressors:</strong> Conflict and the Coup averaged 4.4/5. Education barriers averaged 4.1/5. Over 96% of respondents reported that the coup “Extremely” or “Greatly” impacted their mental health.</li>
+                <li><strong>Symptoms:</strong> 42% experience anxiety frequently, 35% report frequent depressive symptoms, and 29% suffer from frequent sleep difficulties.</li>
+                <li><strong>Support:</strong> Only 2% reported “Extremely sufficient” access to mental health support.</li>
+            </ul>
+        </div>
+
+        <div class="doc" id="references">
+            <h2>Research Paper and References</h2>
+            <p><strong>Download the Full Report:</strong></p>
+            <a href="Narrative Power Report.pdf" class="btn-gold" download="Narrative Power Report.pdf">
+                <i class="bi bi-file-earmark-pdf"></i> Download the Research Report (PDF)
+            </a>
+            <h3>Academic References</h3>
+            <ul>
+                <li>Inter-Agency Standing Committee. (2007). <em>IASC guidelines on mental health and psychosocial support in emergency settings.</em></li>
+                <li>International Organization for Migration. (n.d.). <em>Mental health and psychosocial support in displacement and crisis contexts.</em></li>
+                <li>United Nations Office for the Coordination of Humanitarian Affairs. (n.d.). <em>Myanmar humanitarian needs and response reports.</em></li>
+                <li>World Health Organization. (n.d.). <em>Mental health in emergencies and conflict settings.</em></li>
+                <li>World Health Organization. (2022). <em>World mental health report: Transforming mental health for all.</em></li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const htmlEl = document.documentElement;
+        const themeBtn = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const charts = {};
+
+        themeBtn.addEventListener('click', () => {
+            const dark = htmlEl.getAttribute('data-bs-theme') === 'dark';
+            htmlEl.setAttribute('data-bs-theme', dark ? 'light' : 'dark');
+            themeIcon.className = dark ? 'bi bi-moon-fill' : 'bi bi-sun-fill';
+            applyChartTheme(dark ? 'light' : 'dark');
+        });
+
+        function applyChartTheme(theme) {
+            const tc = theme === 'dark' ? '#c9d1d9' : '#4b5563';
+            const gc = theme === 'dark' ? '#3d4450' : '#d1d5db';
+            Object.values(charts).forEach(c => {
+                if (c.options.plugins && c.options.plugins.legend) c.options.plugins.legend.labels.color = tc;
+                if (c.options.scales) {
+                    Object.values(c.options.scales).forEach(s => {
+                        if (s.ticks) s.ticks.color = tc;
+                        if (s.grid) s.grid.color = gc;
+                        if (s.title) s.title.color = tc;
+                    });
+                }
+                c.update('none');
+            });
+        }
+
+        Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+        Chart.defaults.font.size = 12;
+        Chart.defaults.color = '#4b5563';
+        Chart.defaults.plugins.legend.labels.boxWidth = 12;
+        Chart.defaults.plugins.legend.labels.padding = 12;
+
+        /* Dark gold for bars */
+        const GOLD = '#a8841a';
+        const GOLD_MID = '#c9a227';
+        const GOLD_LIGHT = '#d4b84a';
+        const GOLD_PALE = '#e8d48b';
+        const GOLD_MUTED = '#bba76a';
+        const sev = [GOLD, GOLD_MID, GOLD_LIGHT, GOLD_PALE, '#f0e6b8', '#c4b896'];
+
+        function makeChart(id, type, data, opts) {
+            opts = opts || {};
+            const el = document.getElementById(id);
+            if (!el) return;
+            charts[id] = new Chart(el.getContext('2d'), {
+                type: type,
+                data: data,
+                options: Object.assign({
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#4b5563', usePointStyle: true, pointStyle: 'rectRounded' }
+                        }
+                    }
+                }, opts)
+            });
+        }
+
+        const noLegend = { plugins: { legend: { display: false } } };
+        const stackH = {
+            indexAxis: 'y',
+            plugins: { legend: { position: 'bottom' } },
+            scales: {
+                x: { stacked: true, grid: { color: '#d1d5db' } },
+                y: { stacked: true, grid: { display: false } }
+            }
+        };
+
+        /* DEMOGRAPHICS */
+        makeChart('ageChart', 'bar', {
+            labels: ['18–25', '26–35', '36–45', '46–55', '56+'],
+            datasets: [{
+                label: 'Respondents',
+                data: [151, 433, 139, 73, 18],
+                backgroundColor: GOLD,
+                borderRadius: 5,
+                maxBarThickness: 36
+            }]
+        }, noLegend);
+
+        makeChart('regionChart', 'bar', {
+            labels: ['Yangon', 'Mandalay', 'Rakhine', 'Bago', 'Ayeyarwady', 'Shan', 'Sagaing', 'Magway', 'Tanintharyi', 'Mon', 'Kayin', 'Kachin', 'Kayah', 'Chin'],
+            datasets: [{
+                label: 'Respondents',
+                data: [134, 119, 95, 70, 57, 57, 52, 47, 41, 37, 37, 26, 24, 18],
+                backgroundColor: GOLD,
+                borderRadius: 4,
+                maxBarThickness: 14
+            }]
+        }, {
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { color: '#d1d5db' } },
+                y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+            }
+        });
+
+        makeChart('occupationChart', 'doughnut', {
+            labels: ['Private Employee', 'Unemployed', 'Student', 'Housewife', 'Business Owner'],
+            datasets: [{
+                data: [341, 307, 95, 40, 31],
+                backgroundColor: [GOLD, GOLD_MID, GOLD_LIGHT, GOLD_PALE, GOLD_MUTED],
+                borderWidth: 0,
+                hoverOffset: 6
+            }]
+        }, {
+            cutout: '55%',
+            plugins: { legend: { position: 'bottom', labels: { padding: 10, font: { size: 11 } } } }
+        });
+
+        makeChart('genderChart', 'doughnut', {
+            labels: ['Female 54%', 'Male 45%', 'Prefer not to say 1%'],
+            datasets: [{
+                data: [444, 365, 20],
+                backgroundColor: [GOLD, GOLD_MID, GOLD_MUTED],
+                borderWidth: 0,
+                hoverOffset: 6
+            }]
+        }, {
+            cutout: '55%',
+            plugins: { legend: { position: 'bottom', labels: { padding: 10, font: { size: 11 } } } }
+        });
+
+        /* STRESSORS */
+        makeChart('averageImpactChart', 'bar', {
+            labels: ['Conflict', 'Coup', 'Economic Hardship', 'Freedom Limits', 'Education Barriers', 'Conscription', 'Natural Disaster'],
+            datasets: [{
+                label: 'Avg Score / 5',
+                data: [4.4, 4.4, 4.3, 4.3, 4.1, 4.1, 3.9],
+                backgroundColor: GOLD,
+                borderColor: '#8a6d14',
+                borderWidth: 1,
+                borderRadius: 5,
+                maxBarThickness: 28
+            }]
+        }, {
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { min: 0, max: 5, grid: { color: '#d1d5db' } },
+                y: { grid: { display: false } }
+            }
+        });
+
+        makeChart('coupChart', 'bar', {
+            labels: ['Coup'],
+            datasets: [
+                { label: 'Extremely', data: [396], backgroundColor: sev[0] },
+                { label: 'Greatly', data: [384], backgroundColor: sev[1] },
+                { label: 'Moderately', data: [34], backgroundColor: sev[2] }
+            ]
+        }, stackH);
+
+        makeChart('conflictChart', 'bar', {
+            labels: ['Conflict'],
+            datasets: [
+                { label: 'Extremely', data: [426], backgroundColor: sev[0] },
+                { label: 'Greatly', data: [286], backgroundColor: sev[1] },
+                { label: 'Moderately', data: [83], backgroundColor: sev[2] },
+                { label: 'Slightly', data: [19], backgroundColor: sev[3] }
+            ]
+        }, stackH);
+
+        makeChart('econChart', 'bar', {
+            labels: ['Economic'],
+            datasets: [
+                { label: 'Extremely', data: [386], backgroundColor: sev[0] },
+                { label: 'Greatly', data: [342], backgroundColor: sev[1] },
+                { label: 'Moderately', data: [63], backgroundColor: sev[2] },
+                { label: 'Slightly', data: [23], backgroundColor: sev[3] }
+            ]
+        }, stackH);
+
+        makeChart('conscriptionChart', 'bar', {
+            labels: ['Conscription'],
+            datasets: [
+                { label: 'Extremely', data: [364], backgroundColor: sev[0] },
+                { label: 'Greatly', data: [310], backgroundColor: sev[1] },
+                { label: 'Moderately', data: [34], backgroundColor: sev[2] },
+                { label: 'Slightly', data: [82], backgroundColor: sev[3] },
+                { label: 'None', data: [24], backgroundColor: sev[5] }
+            ]
+        }, stackH);
+
+        makeChart('disasterChart', 'bar', {
+            labels: ['Disaster'],
+            datasets: [
+                { label: 'Extremely', data: [207], backgroundColor: sev[0] },
+                { label: 'Greatly', data: [330], backgroundColor: sev[1] },
+                { label: 'Moderately', data: [241], backgroundColor: sev[2] },
+                { label: 'Slightly', data: [36], backgroundColor: sev[3] }
+            ]
+        }, stackH);
+
+        makeChart('freedomChart', 'bar', {
+            labels: ['Freedom'],
+            datasets: [
+                { label: 'Extremely', data: [358], backgroundColor: sev[0] },
+                { label: 'Greatly', data: [342], backgroundColor: sev[1] },
+                { label: 'Moderately', data: [95], backgroundColor: sev[2] },
+                { label: 'Slightly', data: [19], backgroundColor: sev[3] }
+            ]
+        }, stackH);
+
+        makeChart('educationChart', 'bar', {
+            labels: ['Education'],
+            datasets: [
+                { label: 'Extremely', data: [322], backgroundColor: sev[0] },
+                { label: 'Greatly', data: [353], backgroundColor: sev[1] },
+                { label: 'Moderately', data: [79], backgroundColor: sev[2] },
+                { label: 'Slightly', data: [41], backgroundColor: sev[3] },
+                { label: 'None', data: [19], backgroundColor: sev[5] }
+            ]
+        }, stackH);
+
+        /* SYMPTOMS */
+        makeChart('hopelessnessChart', 'bar', {
+            labels: ['Hopelessness'],
+            datasets: [
+                { label: 'Extremely (55%)', data: [445], backgroundColor: sev[0] },
+                { label: 'Greatly (45%)', data: [369], backgroundColor: sev[1] }
+            ]
+        }, stackH);
+
+        makeChart('depressionChart', 'bar', {
+            labels: ['Depression'],
+            datasets: [
+                { label: 'Every day 17%', data: [17], backgroundColor: sev[0] },
+                { label: 'Most days 18%', data: [18], backgroundColor: sev[1] },
+                { label: 'A few days 43%', data: [43], backgroundColor: sev[2] },
+                { label: 'Occasionally 18%', data: [18], backgroundColor: sev[3] },
+                { label: 'Never 4%', data: [4], backgroundColor: sev[5] }
+            ]
+        }, stackH);
+
+        makeChart('sleepChart', 'bar', {
+            labels: ['Sleep'],
+            datasets: [
+                { label: 'Every day 11%', data: [11], backgroundColor: sev[0] },
+                { label: 'Most days 18%', data: [18], backgroundColor: sev[1] },
+                { label: 'A few days 33%', data: [33], backgroundColor: sev[2] },
+                { label: 'Occasionally 29%', data: [29], backgroundColor: sev[3] },
+                { label: 'Never 10%', data: [10], backgroundColor: sev[5] }
+            ]
+        }, stackH);
+
+        makeChart('fearChart', 'bar', {
+            labels: ['Fear & Panic'],
+            datasets: [
+                { label: 'Every day 5%', data: [5], backgroundColor: sev[0] },
+                { label: 'Most days 10%', data: [10], backgroundColor: sev[1] },
+                { label: 'A few days 35%', data: [35], backgroundColor: sev[2] },
+                { label: 'Occasionally 31%', data: [31], backgroundColor: sev[3] },
+                { label: 'Never 19%', data: [19], backgroundColor: sev[5] }
+            ]
+        }, stackH);
+
+        /* SUPPORT & GENDER */
+        makeChart('supportChart', 'doughnut', {
+            labels: ['Slightly 53%', 'Not at all 32%', 'Moderately 11%', 'Greatly 2%', 'Extremely 2%'],
+            datasets: [{
+                data: [53, 32, 11, 2, 2],
+                backgroundColor: [GOLD_MID, GOLD, GOLD_LIGHT, GOLD_PALE, GOLD_MUTED],
+                borderWidth: 0,
+                hoverOffset: 6
+            }]
+        }, {
+            cutout: '55%',
+            plugins: { legend: { position: 'bottom', labels: { padding: 8, font: { size: 10 } } } }
+        });
+
+        makeChart('genderImpactChart', 'bar', {
+            labels: ['Education', 'Economic', 'Freedom', 'Conscription', 'Conflict', 'Disaster', 'Coup'],
+            datasets: [
+                { label: 'Female', data: [4.11, 4.13, 4.17, 3.99, 4.22, 3.80, 4.33], backgroundColor: GOLD_LIGHT, borderRadius: 4, maxBarThickness: 18 },
+                { label: 'Male', data: [4.22, 4.61, 4.37, 4.27, 4.64, 3.89, 4.55], backgroundColor: GOLD, borderRadius: 4, maxBarThickness: 18 },
+                { label: 'Other', data: [3.00, 4.00, 5.00, 4.00, 3.00, 5.00, 5.00], backgroundColor: GOLD_MUTED, borderRadius: 4, maxBarThickness: 18 }
+            ]
+        }, {
+            scales: {
+                y: { min: 0, max: 5, title: { display: true, text: 'Impact (1–5)' }, grid: { color: '#d1d5db' } },
+                x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+            },
+            plugins: { legend: { position: 'bottom', labels: { padding: 10, font: { size: 11 } } } }
+        });
+
+        /* MAP – Hopelessness Choropleth (RED) */
+        const map = L.map('map', {
+            zoomControl: true,
+            attributionControl: true
+        }).setView([19.75, 96.1], 6);
+
+        // Changed to Esri Dark Gray Canvas (Keyless)
+        L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors',
+            maxZoom: 19,
+            errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+        }).addTo(map);
+
+        const regionData = {
+            Yangon:      { sample: 134, score: 4.5, hopeless: 95 },
+            Mandalay:    { sample: 119, score: 4.6, hopeless: 98 },
+            Rakhine:     { sample: 95,  score: 4.7, hopeless: 100 },
+            Bago:        { sample: 70,  score: 4.3, hopeless: 90 },
+            Ayeyarwady:  { sample: 57,  score: 4.2, hopeless: 88 },
+            Shan:        { sample: 57,  score: 4.5, hopeless: 97 },
+            Sagaing:     { sample: 52,  score: 4.6, hopeless: 99 },
+            Magway:      { sample: 47,  score: 4.4, hopeless: 96 },
+            Tanintharyi: { sample: 41,  score: 4.1, hopeless: 85 },
+            Mon:         { sample: 37,  score: 4.2, hopeless: 89 },
+            Kayin:       { sample: 37,  score: 4.4, hopeless: 94 },
+            Kachin:      { sample: 26,  score: 4.5, hopeless: 98 },
+            Kayah:       { sample: 24,  score: 4.5, hopeless: 96 },
+            Chin:        { sample: 18,  score: 4.3, hopeless: 92 }
+        };
+
+        function mapColor(h) {
+            if (h >= 98) return '#7f0000';
+            if (h >= 95) return '#b30000';
+            if (h >= 92) return '#d7301f';
+            if (h >= 88) return '#ef6548';
+            return '#fc8d59';
+        }
+
+        function norm(raw) {
+            if (!raw) return '';
+            return String(raw)
+                .replace(/\s*(State|Region|Division|Union Territory)\s*/gi, '')
+                .replace(/Nay\s*Pyi\s*Taw/i, 'Nay Pyi Taw')
+                .trim()
+                .replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+        }
+
+        var geoLayer = null;
+
+        fetch('https://raw.githubusercontent.com/khinemyaezin/myanmar_geojson_data/main/state.json')
+            .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
+            .then(function(geo) {
+                geoLayer = L.geoJSON(geo, {
+                    style: function(f) {
+                        var key = Object.keys(regionData).find(function(k) {
+                            var n = norm(f.properties.ST || f.properties.name || '');
+                            return n.indexOf(k) !== -1 || k.indexOf(n) !== -1;
+                        });
+                        var h = key ? regionData[key].hopeless : 85;
+                        return {
+                            fillColor: mapColor(h),
+                            weight: 1.2,
+                            color: '#1a1a2e',
+                            fillOpacity: 0.85
+                        };
+                    },
+                    onEachFeature: function(f, layer) {
+                        var n = norm(f.properties.ST || f.properties.name || 'Unknown');
+                        var key = Object.keys(regionData).find(function(k) {
+                            return n.indexOf(k) !== -1 || k.indexOf(n) !== -1;
+                        }) || n;
+                        var d = regionData[key] || { sample: '—', score: '—', hopeless: '—' };
+
+                        layer.bindPopup(
+                            '<div style="font-family:Segoe UI,sans-serif;min-width:140px">' +
+                            '<strong style="font-size:14px;color:#1a2a44">' + key + '</strong>' +
+                            '<div style="margin-top:6px;font-size:13px;color:#4b5563">' +
+                            'Hopelessness: <b style="color:#b30000">' + d.hopeless + '%</b><br>' +
+                            'Sample: <b>' + d.sample + '</b><br>' +
+                            'Avg Impact: <b>' + d.score + '/5</b>' +
+                            '</div></div>'
+                        );
+
+                        layer.on({
+                            mouseover: function(e) {
+                                e.target.setStyle({ weight: 2.5, color: '#1a2a44', fillOpacity: 0.95 });
+                                e.target.bringToFront();
+                            },
+                            mouseout: function(e) {
+                                if (geoLayer) geoLayer.resetStyle(e.target);
+                            }
+                        });
+                    }
+                }).addTo(map);
+            })
+            .catch(function() {});
+
+        function resetMap() {
+            map.setView([19.75, 96.1], 6);
+            map.closePopup();
+        }
+    </script>
+</body>
+</html>
